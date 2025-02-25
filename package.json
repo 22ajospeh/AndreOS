@@ -1,14 +1,12 @@
 {
-  "name": "desktop",
+  "name": "career-hub",
   "version": "1.0.0",
+  "description": "Single-file GitHub for Your Career app",
   "main": "careerHub.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node careerHub.js",
-    "dev": "nodemon careerHub.js"
+    "start": "node careerHub.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
