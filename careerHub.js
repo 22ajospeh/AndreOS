@@ -6,6 +6,7 @@
  * Enhanced UI with:
  *  - Preserved node colors
  *  - Collapsible document editor
+ *  - Edit node color by right-click (context menu) on a node
  *  - Still using file-based persistence in careerData.json
  */
 
@@ -902,8 +903,9 @@ app.get('/', (req, res) => {
         .attr('class', 'node')
         .attr('r', 18)
         .attr('fill', d => d.color || '#2ecc71')  // Use node.color if set, else fallback
+        // SHIFT-click => attach/detach links
         .on('click', (event, d) => {
-          // SHIFT-click => attach/detach links
+          // handle SHIFT+click for linking
           if (event.shiftKey) {
             if (!selectedNode) {
               selectedNode = d;
@@ -912,7 +914,6 @@ app.get('/', (req, res) => {
                 selectedNode = null;
                 return;
               }
-              // If a link exists, remove it; else add it
               const existing = graph.links.find(l =>
                 (l.source.id === selectedNode.id && l.target.id === d.id) ||
                 (l.source.id === d.id && l.target.id === selectedNode.id)
@@ -927,13 +928,25 @@ app.get('/', (req, res) => {
             }
           }
         })
+        // Double-click => delete node
         .on('dblclick', (event, d) => {
           if (!confirm(\`Delete node "\${d.name}"?\`)) return;
-          // Remove the node and its links
           graph.nodes = graph.nodes.filter(n => n.id !== d.id);
           graph.links = graph.links.filter(l => l.source.id !== d.id && l.target.id !== d.id);
           updateGraph();
         })
+        // Right-click => edit color
+        .on('contextmenu', (event, d) => {
+          event.preventDefault(); // Don’t show the default browser context menu
+          const newColor = prompt(
+            'Enter new color for this node (e.g. "#ff0000", "blue"):',
+            d.color || '#2ecc71'
+          );
+          if (!newColor) return; // user canceled
+          d.color = newColor;
+          updateGraph();
+        })
+        // Dragging
         .call(d3.drag()
           .on('start', dragstarted)
           .on('drag', dragged)
@@ -949,7 +962,7 @@ app.get('/', (req, res) => {
         .attr('font-size', 12)
         .text(d => d.name || 'Node');
 
-      // Set up simulation
+      // Setup simulation
       simulation.nodes(graph.nodes).on('tick', ticked);
       simulation.force('link').links(graph.links);
       simulation.alpha(1).restart();
@@ -1003,7 +1016,6 @@ app.get('/', (req, res) => {
 
     // Save Graph
     function saveGraph() {
-      // Convert source/target object references into IDs
       const dataToSave = {
         nodes: graph.nodes.map(n => ({ ...n })),
         links: graph.links.map(l => ({
@@ -1032,7 +1044,6 @@ app.get('/', (req, res) => {
       if (!nodeName) return;
       const cWidth = graphContainer.clientWidth;
       const cHeight = graphContainer.clientHeight;
-      // Create node, store with no color => defaults on display
       const newNode = {
         id: 'n' + Date.now(),
         name: nodeName,
